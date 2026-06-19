@@ -277,24 +277,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
     <input id="players-select" type="number" min="2" max="15" value="11" placeholder="e.g. 11">
     <div class="hint">Any number — 6, 8, 11 or custom</div>
   </div>
-  <button class="btn" onclick="goToToss()">🪙 1st Innings — Proceed to Toss</button>
-
-  <!-- 2nd innings on different phone -->
-  <div class="card" style="margin-top:8px;border-color:#6a1b9a">
-    <h2 style="color:#e040fb">🎯 2nd Team — Set Target</h2>
-    <p style="color:#607d8b;font-size:0.82rem;margin-bottom:10px">Other team batted already? Enter their total and start your innings!</p>
-    <label>Your Team Name (Batting)</label>
-    <input id="chase-team" placeholder="e.g. Chennai Super Kings">
-    <label>Opponent Team Name (Bowling)</label>
-    <input id="chase-bowling-team" placeholder="e.g. Mumbai Indians">
-    <label>Target to chase (their runs + 1)</label>
-    <input id="chase-target" type="number" min="1" placeholder="e.g. 156">
-    <label>Overs per innings</label>
-    <input id="chase-overs" type="number" min="1" max="50" value="20">
-    <label>Players per side</label>
-    <input id="chase-players" type="number" min="2" max="15" value="11">
-    <button class="btn" style="background:linear-gradient(135deg,#4a148c,#9c27b0);margin-top:12px" onclick="startChase()">🎯 Start Innings</button>
-  </div>
+  <button class="btn" onclick="goToToss()">🪙 Proceed to Toss</button>
 </div>
 
 <!-- TOSS SCREEN -->
@@ -690,39 +673,6 @@ function startMatch(battingFirst, bowlingFirst) {
   updateDisplay();
 }
 
-function startChase() {
-  const t1 = document.getElementById('chase-team').value.trim() || 'Team 1';
-  const t2 = document.getElementById('chase-bowling-team').value.trim() || 'Team 2';
-  const target = parseInt(document.getElementById('chase-target').value);
-  const overs = parseInt(document.getElementById('chase-overs').value) || 20;
-  const n = parseInt(document.getElementById('chase-players').value) || 11;
-  if (!target || target < 1) { alert('Enter the target score!'); return; }
-  const p1 = [], p2 = [];
-  for (let i = 0; i < n; i++) {
-    p1.push(mk(t1 + ' P' + (i+1)));
-    p2.push(mk(t2 + ' P' + (i+1)));
-  }
-  state = {
-    team1: t2, team2: t1,
-    maxOvers: overs, maxPlayers: n,
-    players: {1: p2, 2: p1},
-    innings: 2, battingTeam: 2, bowlingTeam: 1,
-    striker: 0, nonStriker: 1, bowlerIdx: 0, nextBatterIdx: 2,
-    runs: [0,0], wickets: [0,0], balls: [0,0], extras: [0,0],
-    currentOverBalls: [], currentOverLog: [],
-    overSummary: [[],[]],
-    bowlerStats: {1:{}, 2:{}},
-    currentBowlerName: p1[0].name,
-    undoStack: [], target: target, matchEnded: false,
-    _pendingRW: undefined,
-  };
-  initBS(p1[0].name, 1);
-  document.getElementById('setup-screen').style.display = 'none';
-  document.getElementById('score-screen').style.display = 'block';
-  document.getElementById('inn1-view').style.display = 'none';
-  document.getElementById('live-view').style.display = 'block';
-  updateDisplay();
-}
 
 function mk(name) { return {name, runs:0, balls:0, fours:0, sixes:0, out:false, dismissal:''}; }
 function initBS(name, team) {
@@ -1249,7 +1199,7 @@ function buildFullScorecard() {
       if (p.balls>0||p.out) {
         const sr=p.balls>0?((p.runs/p.balls)*100).toFixed(1):'0.0';
         const isTop = p.runs >= 30;
-        html+=`<tr><td><span class="player-name" style="${isTop?'color:#ffd600':'}">${p.name}</span><span class="player-status">${p.out?p.dismissal:'not out'}</span></td>
+        html+=`<tr><td><span class="player-name" style="${isTop?'color:#ffd600':'}'">${p.name}</span><span class="player-status">${p.out?p.dismissal:'not out'}</span></td>
           <td class="score-highlight" style="${isTop?'color:#ffd600':''}">${p.runs}</td>
           <td>${p.balls}</td><td style="color:#2979ff">${p.fours}</td><td style="color:#aa00ff">${p.sixes}</td><td>${sr}</td></tr>`;
       }
