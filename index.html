@@ -259,7 +259,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 
 <div class="header">
   <h1>🏏 CRICKET SCORER</h1>
-  <p>LIVE · INTERACTIVE · REAL-TIME</p>
+  <p>LIVE · INTERACTIVE · REAL-TIME · v2</p>
 </div>
 
 <!-- SETUP -->
@@ -672,6 +672,7 @@ function startMatch(battingFirst, bowlingFirst) {
   document.getElementById('live-view').style.display = 'block';
   updateDisplay();
 }
+
 
 function mk(name) { return {name, runs:0, balls:0, fours:0, sixes:0, out:false, dismissal:''}; }
 function initBS(name, team) {
@@ -1198,7 +1199,7 @@ function buildFullScorecard() {
       if (p.balls>0||p.out) {
         const sr=p.balls>0?((p.runs/p.balls)*100).toFixed(1):'0.0';
         const isTop = p.runs >= 30;
-        html+=`<tr><td><span class="player-name" style="${isTop?'color:#ffd600':'}'">${p.name}</span><span class="player-status">${p.out?p.dismissal:'not out'}</span></td>
+        html+=`<tr><td><span class="player-name" style="${isTop?'color:#ffd600':''}">${p.name}</span><span class="player-status">${p.out?p.dismissal:'not out'}</span></td>
           <td class="score-highlight" style="${isTop?'color:#ffd600':''}">${p.runs}</td>
           <td>${p.balls}</td><td style="color:#2979ff">${p.fours}</td><td style="color:#aa00ff">${p.sixes}</td><td>${sr}</td></tr>`;
       }
