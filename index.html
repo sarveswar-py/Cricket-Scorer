@@ -277,8 +277,24 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
     <input id="players-select" type="number" min="2" max="15" value="11" placeholder="e.g. 11">
     <div class="hint">Any number — 6, 8, 11 or custom</div>
   </div>
-  <button class="btn" onclick="goToToss()">🪙 Proceed to Toss</button>
+  <button class="btn" onclick="goToToss()">🪙 1st Innings — Proceed to Toss</button>
 
+  <!-- 2nd innings on different phone -->
+  <div class="card" style="margin-top:8px;border-color:#6a1b9a">
+    <h2 style="color:#e040fb">🎯 2nd Team — Set Target</h2>
+    <p style="color:#607d8b;font-size:0.82rem;margin-bottom:10px">Other team batted already? Enter their total and start your innings!</p>
+    <label>Your Team Name (Batting)</label>
+    <input id="chase-team" placeholder="e.g. Chennai Super Kings">
+    <label>Opponent Team Name (Bowling)</label>
+    <input id="chase-bowling-team" placeholder="e.g. Mumbai Indians">
+    <label>Target to chase (their runs + 1)</label>
+    <input id="chase-target" type="number" min="1" placeholder="e.g. 156">
+    <label>Overs per innings</label>
+    <input id="chase-overs" type="number" min="1" max="50" value="20">
+    <label>Players per side</label>
+    <input id="chase-players" type="number" min="2" max="15" value="11">
+    <button class="btn" style="background:linear-gradient(135deg,#4a148c,#9c27b0);margin-top:12px" onclick="startChase()">🎯 Start Innings</button>
+  </div>
 </div>
 
 <!-- TOSS SCREEN -->
@@ -476,14 +492,6 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
   <div class="modal" style="border-color:#1a3a6a">
     <h2 id="end-innings-title" style="color:var(--green2)">Over!</h2>
     <div class="modal-info" id="end-innings-msg"></div>
-    <div id="share-target-section" style="display:none;background:#0a1929;border:1px solid #6a1b9a;border-radius:10px;padding:14px;margin:12px 0;text-align:center">
-      <div style="font-size:0.72rem;color:#ce93d8;margin-bottom:6px;letter-spacing:1px">SEND THIS TO THE OTHER TEAM</div>
-      <div style="font-size:0.78rem;color:#607d8b;margin-bottom:8px">They can open the app on their phone and enter the target to track their chase</div>
-      <div id="share-target-display" style="font-size:2rem;font-weight:900;color:#e040fb;margin-bottom:6px"></div>
-      <div style="font-size:0.75rem;color:#607d8b;margin-bottom:8px">Target to chase</div>
-      <button class="btn btn-sm" style="background:linear-gradient(135deg,#4a148c,#9c27b0);color:#fff;width:100%" onclick="copyChaseLink()">📋 Copy Chase Link</button>
-      <div id="copy-confirm" style="font-size:0.75rem;color:#00e676;margin-top:6px;display:none">✓ Link copied!</div>
-    </div>
     <div id="end-innings-bowler-section">
       <label id="bowler-label">Select Bowler</label>
       <select id="inn2-bowler-select"></select>
@@ -582,18 +590,6 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 <script>
 let state = {};
 
-// Auto-start chase from URL params (when team 2 opens the shared link)
-window.addEventListener('load', function() {
-  const p = new URLSearchParams(window.location.search);
-  if (p.get('chase') === '1' && p.get('target')) {
-    document.getElementById('chase-team').value = p.get('team') || '';
-    document.getElementById('chase-bowling-team').value = p.get('bowl') || '';
-    document.getElementById('chase-target').value = p.get('target') || '';
-    document.getElementById('chase-overs').value = p.get('overs') || '20';
-    document.getElementById('chase-players').value = p.get('players') || '11';
-    startChase();
-  }
-});
 
 // ===== TOSS =====
 let tossState = {};
@@ -706,8 +702,6 @@ function startChase() {
     p1.push(mk(t1 + ' P' + (i+1)));
     p2.push(mk(t2 + ' P' + (i+1)));
   }
-  // t1=batting team, t2=bowling team; state.team1 is always 1st innings batting team
-  // For chase: batting=team2, bowling=team1 in state
   state = {
     team1: t2, team2: t1,
     maxOvers: overs, maxPlayers: n,
@@ -718,11 +712,11 @@ function startChase() {
     currentOverBalls: [], currentOverLog: [],
     overSummary: [[],[]],
     bowlerStats: {1:{}, 2:{}},
-    currentBowlerName: p2[0].name,
+    currentBowlerName: p1[0].name,
     undoStack: [], target: target, matchEnded: false,
     _pendingRW: undefined,
   };
-  initBS(p2[0].name, 1);
+  initBS(p1[0].name, 1);
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('score-screen').style.display = 'block';
   document.getElementById('inn1-view').style.display = 'none';
@@ -1059,10 +1053,6 @@ function showEndInnings() {
   document.getElementById('end-innings-title').textContent = '🏏 1st Innings Over';
   document.getElementById('end-innings-msg').textContent =
     state.team1+': '+runs+'/'+wkts+'\n'+state.team2+' need '+state.target+' runs to win';
-  // Show share target panel
-  document.getElementById('share-target-section').style.display = 'block';
-  document.getElementById('share-target-display').textContent = state.target;
-  document.getElementById('copy-confirm').style.display = 'none';
   const sel = document.getElementById('inn2-bowler-select');
   sel.innerHTML = '';
   state.players[1].forEach((p,i) => {
@@ -1074,20 +1064,6 @@ function showEndInnings() {
   document.getElementById('end-innings-modal').classList.add('open');
 }
 
-function copyChaseLink() {
-  const url = window.location.href.split('?')[0] +
-    '?chase=1&team=' + encodeURIComponent(state.team2) +
-    '&bowl=' + encodeURIComponent(state.team1) +
-    '&target=' + state.target +
-    '&overs=' + state.maxOvers +
-    '&players=' + state.maxPlayers;
-  navigator.clipboard.writeText(url).then(() => {
-    document.getElementById('copy-confirm').style.display = 'block';
-    setTimeout(() => document.getElementById('copy-confirm').style.display = 'none', 2500);
-  }).catch(() => {
-    prompt('Copy this link and send to the other team:', url);
-  });
-}
 
 function startSecondInnings() {
   document.getElementById('end-innings-modal').classList.remove('open');
@@ -1273,7 +1249,7 @@ function buildFullScorecard() {
       if (p.balls>0||p.out) {
         const sr=p.balls>0?((p.runs/p.balls)*100).toFixed(1):'0.0';
         const isTop = p.runs >= 30;
-        html+=`<tr><td><span class="player-name" style="${isTop?'color:#ffd600':''}">${p.name}</span><span class="player-status">${p.out?p.dismissal:'not out'}</span></td>
+        html+=`<tr><td><span class="player-name" style="${isTop?'color:#ffd600':'}">${p.name}</span><span class="player-status">${p.out?p.dismissal:'not out'}</span></td>
           <td class="score-highlight" style="${isTop?'color:#ffd600':''}">${p.runs}</td>
           <td>${p.balls}</td><td style="color:#2979ff">${p.fours}</td><td style="color:#aa00ff">${p.sixes}</td><td>${sr}</td></tr>`;
       }
