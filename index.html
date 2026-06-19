@@ -583,7 +583,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 let state = {};
 
 // Auto-start chase from URL params (when team 2 opens the shared link)
-(function() {
+window.addEventListener('load', function() {
   const p = new URLSearchParams(window.location.search);
   if (p.get('chase') === '1' && p.get('target')) {
     document.getElementById('chase-team').value = p.get('team') || '';
@@ -591,10 +591,9 @@ let state = {};
     document.getElementById('chase-target').value = p.get('target') || '';
     document.getElementById('chase-overs').value = p.get('overs') || '20';
     document.getElementById('chase-players').value = p.get('players') || '11';
-    // Auto-launch directly into scoring
-    setTimeout(startChase, 100);
+    startChase();
   }
-})();
+});
 
 // ===== TOSS =====
 let tossState = {};
@@ -707,6 +706,8 @@ function startChase() {
     p1.push(mk(t1 + ' P' + (i+1)));
     p2.push(mk(t2 + ' P' + (i+1)));
   }
+  // t1=batting team, t2=bowling team; state.team1 is always 1st innings batting team
+  // For chase: batting=team2, bowling=team1 in state
   state = {
     team1: t2, team2: t1,
     maxOvers: overs, maxPlayers: n,
@@ -717,11 +718,11 @@ function startChase() {
     currentOverBalls: [], currentOverLog: [],
     overSummary: [[],[]],
     bowlerStats: {1:{}, 2:{}},
-    currentBowlerName: p1[0].name,
+    currentBowlerName: p2[0].name,
     undoStack: [], target: target, matchEnded: false,
     _pendingRW: undefined,
   };
-  initBS(p1[0].name, 1);
+  initBS(p2[0].name, 1);
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('score-screen').style.display = 'block';
   document.getElementById('inn1-view').style.display = 'none';
