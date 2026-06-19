@@ -284,11 +284,31 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 <div class="toss-screen" id="toss-screen">
   <div class="toss-card">
     <h2>🪙 TOSS TIME</h2>
-    <p id="toss-subtitle">Tap the coin to flip!</p>
-    <span class="coin" id="toss-coin" onclick="flipCoin()">🪙</span>
+    <p id="toss-subtitle">Who is calling the toss?</p>
+
+    <!-- Step 1: pick who calls -->
+    <div id="toss-step1">
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="btn" style="flex:1;padding:14px;font-size:0.95rem" id="caller-btn-1" onclick="setCaller(1)">🏏 <span id="caller-name-1">Team 1</span></button>
+        <button class="btn btn-secondary" style="flex:1;padding:14px;font-size:0.95rem" id="caller-btn-2" onclick="setCaller(2)">🏏 <span id="caller-name-2">Team 2</span></button>
+      </div>
+    </div>
+
+    <!-- Step 2: call heads or tails -->
+    <div id="toss-step2" style="display:none">
+      <p style="color:#90a4ae;font-size:0.85rem;margin-bottom:12px"><span id="calling-team-label"></span> — call it:</p>
+      <div style="display:flex;gap:10px;margin-bottom:16px">
+        <button class="btn" style="flex:1;padding:12px" onclick="callToss('heads')">HEADS</button>
+        <button class="btn btn-secondary" style="flex:1;padding:12px" onclick="callToss('tails')">TAILS</button>
+      </div>
+    </div>
+
+    <!-- Step 3: flip -->
+    <span class="coin" id="toss-coin" style="display:none" onclick="flipCoin()">🪙</span>
+
     <div class="toss-result" id="toss-result">
       <div class="winner" id="toss-winner-text"></div>
-      <div class="sub">won the toss! Choose to bat or bowl:</div>
+      <div class="sub" id="toss-result-sub">won the toss! Choose to bat or bowl:</div>
       <div class="toss-choice">
         <button class="toss-choice btn-bat" onclick="tossChoice('bat')">🏏 BAT</button>
         <button class="toss-choice btn-bowl" onclick="tossChoice('bowl')">🎯 BOWL</button>
@@ -340,11 +360,11 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 
     <!-- Batters -->
     <div class="panel">
-      <div class="panel-title">At the Crease</div>
+      <div class="panel-title">At the Crease <span style="color:#1e3a5f;font-size:0.65rem">✏ tap name to edit</span></div>
       <div class="batter-row">
-        <div class="batter-badge striker" id="b1-badge">★</div>
+        <div class="batter-badge striker">★</div>
         <div class="batter-info">
-          <div class="batter-name" id="b1-name">Batter 1</div>
+          <div class="batter-name" id="b1-name" onclick="editName('striker')" style="cursor:pointer" title="Tap to rename">Batter 1 ✏</div>
           <div class="batter-detail" id="b1-stats">0 balls · 0×4 · 0×6</div>
         </div>
         <div>
@@ -355,7 +375,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
       <div class="batter-row">
         <div class="batter-badge nonstriker">—</div>
         <div class="batter-info">
-          <div class="batter-name" id="b2-name">Batter 2</div>
+          <div class="batter-name" id="b2-name" onclick="editName('nonstriker')" style="cursor:pointer" title="Tap to rename">Batter 2 ✏</div>
           <div class="batter-detail" id="b2-stats">0 balls · 0×4 · 0×6</div>
         </div>
         <div>
@@ -366,7 +386,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
       <div class="batter-row">
         <div class="batter-badge bowler-badge">🎯</div>
         <div class="batter-info">
-          <div class="batter-name" id="bowler-name">Bowler</div>
+          <div class="batter-name" id="bowler-name" onclick="editName('bowler')" style="cursor:pointer" title="Tap to rename">Bowler ✏</div>
           <div class="batter-detail" id="bowler-stats">0-0-0-0</div>
         </div>
         <div style="font-size:0.7rem;color:#607d8b;text-align:right" id="bowler-econ">Econ 0.00</div>
@@ -428,10 +448,19 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
   <div class="modal">
     <h2 id="wicket-title" style="color:#ff5252">🔴 Wicket!</h2>
     <label>Dismissal</label>
-    <select id="dismissal-type">
+    <select id="dismissal-type" onchange="toggleLBWRuns(this.value)">
       <option>Bowled</option><option>Caught</option><option>LBW</option>
       <option>Run Out</option><option>Stumped</option><option>Hit Wicket</option>
     </select>
+    <div id="lbw-runs-row" style="display:none">
+      <label>Runs completed before LBW</label>
+      <select id="lbw-runs">
+        <option value="0">0 — no runs</option>
+        <option value="1">1 run</option>
+        <option value="2">2 runs</option>
+        <option value="3">3 runs</option>
+      </select>
+    </div>
     <label id="new-batter-label">New Batter / Who is Out</label>
     <select id="new-batter-select"></select>
     <div class="modal-btns">
@@ -466,6 +495,18 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
     </div>
     <button class="btn btn-sm btn-secondary" style="margin-bottom:8px" onclick="showScorecard()">📊 Full Scorecard</button>
     <button class="btn" onclick="newMatch()">🔄 Play Again</button>
+  </div>
+</div>
+
+<!-- RENAME MODAL -->
+<div class="modal-overlay" id="rename-modal">
+  <div class="modal" style="border-color:#1a3a6a">
+    <h2 style="color:#64b5f6">✏ Edit Name</h2>
+    <input id="rename-input" type="text" placeholder="Enter name" style="margin-bottom:4px">
+    <div class="modal-btns">
+      <button class="btn btn-sm btn-secondary" onclick="document.getElementById('rename-modal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#1565c0,#2979ff);color:#fff" onclick="confirmRename()">Save</button>
+    </div>
   </div>
 </div>
 
@@ -519,29 +560,50 @@ let tossState = {};
 function goToToss() {
   const t1 = document.getElementById('team1').value.trim() || 'Team 1';
   const t2 = document.getElementById('team2').value.trim() || 'Team 2';
-  if (!t1 || !t2) { alert('Please enter both team names!'); return; }
   tossState = { team1: t1, team2: t2 };
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('toss-screen').style.display = 'block';
-  document.getElementById('toss-subtitle').textContent = t1 + ' vs ' + t2 + ' — tap the coin!';
+  document.getElementById('toss-subtitle').textContent = 'Who is calling the toss?';
+  document.getElementById('caller-name-1').textContent = t1;
+  document.getElementById('caller-name-2').textContent = t2;
+  document.getElementById('toss-step1').style.display = 'block';
+  document.getElementById('toss-step2').style.display = 'none';
+  document.getElementById('toss-coin').style.display = 'none';
   document.getElementById('toss-result').style.display = 'none';
-  document.getElementById('toss-coin').textContent = '🪙';
 }
 
-function flipCoin() {
+function setCaller(teamNum) {
+  tossState.callerTeam = teamNum;
+  const callerName = teamNum === 1 ? tossState.team1 : tossState.team2;
+  document.getElementById('calling-team-label').textContent = callerName + ' calls';
+  document.getElementById('toss-step1').style.display = 'none';
+  document.getElementById('toss-step2').style.display = 'block';
+}
+
+function callToss(call) {
+  tossState.call = call;
+  document.getElementById('toss-step2').style.display = 'none';
+  document.getElementById('toss-subtitle').textContent = 'Flipping...';
   const coin = document.getElementById('toss-coin');
+  coin.style.display = 'block';
   coin.classList.remove('flip');
   void coin.offsetWidth;
   coin.classList.add('flip');
   setTimeout(() => {
-    const winner = Math.random() < 0.5 ? tossState.team1 : tossState.team2;
-    tossState.tossWinner = winner;
-    document.getElementById('toss-winner-text').textContent = '🏆 ' + winner;
+    const result = Math.random() < 0.5 ? 'heads' : 'tails';
+    coin.textContent = result === 'heads' ? 'HEADS' : 'TAILS';
+    const callerName = tossState.callerTeam === 1 ? tossState.team1 : tossState.team2;
+    const otherName = tossState.callerTeam === 1 ? tossState.team2 : tossState.team1;
+    const won = result === tossState.call;
+    tossState.tossWinner = won ? callerName : otherName;
+    document.getElementById('toss-winner-text').textContent = '🏆 ' + tossState.tossWinner;
+    document.getElementById('toss-result-sub').textContent = (won ? 'called it right' : 'wins the toss') + '! Choose to bat or bowl:';
     document.getElementById('toss-result').style.display = 'block';
-    document.getElementById('toss-subtitle').textContent = 'Toss result:';
-    coin.textContent = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
+    document.getElementById('toss-subtitle').textContent = result.toUpperCase() + '!';
   }, 900);
 }
+
+function flipCoin() {} // kept for safety
 
 function tossChoice(choice) {
   const winner = tossState.tossWinner;
@@ -638,6 +700,60 @@ function addExtra(type, extraRuns) {
   }
   state.currentOverLog.push({type, runs: runVal});
   checkEnd(); updateDisplay();
+}
+
+// ===== EDIT NAME =====
+let _renameTarget = null;
+function editName(who) {
+  _renameTarget = who;
+  const bp = state.players[state.battingTeam];
+  let current = '';
+  if (who === 'striker') current = bp[state.striker].name;
+  else if (who === 'nonstriker') current = bp[state.nonStriker].name;
+  else if (who === 'bowler') current = state.currentBowlerName;
+  const inp = document.getElementById('rename-input');
+  inp.value = current.replace(/ ✏$/, '');
+  document.getElementById('rename-modal').classList.add('open');
+  setTimeout(() => inp.select(), 100);
+}
+
+function confirmRename() {
+  const newName = document.getElementById('rename-input').value.trim();
+  if (!newName) return;
+  document.getElementById('rename-modal').classList.remove('open');
+  const bp = state.players[state.battingTeam];
+  if (_renameTarget === 'striker') {
+    const old = bp[state.striker].name;
+    bp[state.striker].name = newName;
+    renameBowlerStat(state.battingTeam, old, newName);
+  } else if (_renameTarget === 'nonstriker') {
+    const old = bp[state.nonStriker].name;
+    bp[state.nonStriker].name = newName;
+    renameBowlerStat(state.battingTeam, old, newName);
+  } else if (_renameTarget === 'bowler') {
+    const old = state.currentBowlerName;
+    const bowlingPlayers = state.players[state.bowlingTeam];
+    const p = bowlingPlayers[state.bowlerIdx];
+    if (p) p.name = newName;
+    // rename in bowlerStats
+    if (state.bowlerStats[state.bowlingTeam][old]) {
+      state.bowlerStats[state.bowlingTeam][newName] = state.bowlerStats[state.bowlingTeam][old];
+      delete state.bowlerStats[state.bowlingTeam][old];
+    }
+    state.currentBowlerName = newName;
+  }
+  updateDisplay();
+}
+
+function toggleLBWRuns(val) {
+  document.getElementById('lbw-runs-row').style.display = val === 'LBW' ? 'block' : 'none';
+}
+
+function renameBowlerStat(team, oldName, newName) {
+  if (state.bowlerStats[team] && state.bowlerStats[team][oldName]) {
+    state.bowlerStats[team][newName] = state.bowlerStats[team][oldName];
+    delete state.bowlerStats[team][oldName];
+  }
 }
 
 function showWideModal() {
@@ -744,16 +860,29 @@ function confirmWicket() {
     newBatterIdx = parseInt(selVal);
   }
 
+  // LBW runs — runs scored before the ball hit pad
+  let lbwRuns = 0;
+  if (dismissal === 'LBW') {
+    lbwRuns = parseInt(document.getElementById('lbw-runs').value) || 0;
+    if (lbwRuns > 0) {
+      batting[state.striker].runs += lbwRuns;
+      state.runs[ii()] += lbwRuns;
+      const b2 = bs(); b2.runs += lbwRuns; b2.curRuns += lbwRuns;
+    }
+  }
+
   batting[outIdx].out = true; batting[outIdx].dismissal = dismissal;
   state.wickets[ii()]++; state.balls[ii()]++;
   const b = bs(); b.balls++;
   if (['Bowled','Caught','LBW','Stumped'].includes(dismissal)) b.wickets++;
 
-  const label = (pendingRuns !== null && pendingRuns !== undefined && pendingRuns > 0) ? pendingRuns+'W' : 'W';
+  const totalPending = (pendingRuns || 0) + lbwRuns;
+  const label = totalPending > 0 ? totalPending+'W' : 'W';
   state.currentOverBalls.push({cls:'wicket', label});
-  state.currentOverLog.push({type:'wicket', dismissal, runs: pendingRuns||0});
+  state.currentOverLog.push({type:'wicket', dismissal, runs: totalPending});
 
-  if (pendingRuns !== null && pendingRuns !== undefined && pendingRuns%2!==0) swap();
+  const effectiveRuns = pendingRuns !== null && pendingRuns !== undefined ? pendingRuns : lbwRuns;
+  if (effectiveRuns % 2 !== 0) swap();
 
   if (outIdx===state.striker) state.striker = newBatterIdx;
   else state.nonStriker = newBatterIdx;
@@ -1122,7 +1251,7 @@ function buildBarChart() {
 }
 
 function newMatch() {
-  ['match-end-modal','end-innings-modal','noball-modal','wide-modal'].forEach(id=>document.getElementById(id).classList.remove('open'));
+  ['match-end-modal','end-innings-modal','noball-modal','wide-modal','rename-modal','wicket-modal'].forEach(id=>document.getElementById(id).classList.remove('open'));
   document.getElementById('scorecard-screen').style.display='none';
   document.getElementById('score-screen').style.display='none';
   document.getElementById('toss-screen').style.display='none';
