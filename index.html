@@ -1219,6 +1219,7 @@ function buildInn1Card() {
 
 // ===== FULL SCORECARD =====
 function showScorecard() {
+  document.getElementById('match-end-modal').classList.remove('open');
   document.getElementById('score-screen').style.display='none';
   document.getElementById('scorecard-screen').style.display='block';
   document.getElementById('scorecard-content').innerHTML = buildFullScorecard();
@@ -1399,7 +1400,7 @@ function broadcastState() {
 function getShareableState() {
   return {
     team1: state.team1, team2: state.team2,
-    maxOvers: state.maxOvers, innings: state.innings,
+    maxOvers: state.maxOvers, maxPlayers: state.maxPlayers, innings: state.innings,
     battingTeam: state.battingTeam, bowlingTeam: state.bowlingTeam,
     runs: state.runs, wickets: state.wickets, balls: state.balls, extras: state.extras,
     striker: state.striker, nonStriker: state.nonStriker,
