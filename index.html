@@ -279,12 +279,6 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
   </div>
   <button class="btn" onclick="goToToss()">🪙 Proceed to Toss</button>
 
-  <div class="card" style="margin-top:8px;border-color:#004d40">
-    <h2 style="color:#00e676">📡 Watch a Live Match</h2>
-    <p style="color:#607d8b;font-size:0.82rem;margin-bottom:10px">Got a room code? Enter it to watch live!</p>
-    <input id="join-code" placeholder="Enter 4-digit room code" maxlength="4" style="text-align:center;font-size:1.5rem;letter-spacing:6px;text-transform:uppercase">
-    <button class="btn" style="background:linear-gradient(135deg,#004d40,#00897b);margin-top:10px" onclick="joinAsViewer()">👁 Watch Live</button>
-  </div>
 </div>
 
 <!-- TOSS SCREEN -->
@@ -436,23 +430,7 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 
     <div class="nav-btns">
       <button class="btn btn-sm btn-secondary" onclick="showScorecard()">📊 Scorecard</button>
-      <button class="btn btn-sm" style="background:linear-gradient(135deg,#004d40,#00897b);color:#fff" onclick="toggleMultiplayer()">📡 Live Share</button>
       <button class="btn btn-sm btn-danger" onclick="newMatch()">🔄 New Match</button>
-    </div>
-
-    <!-- Multiplayer panel -->
-    <div id="mp-panel" style="display:none" class="panel">
-      <div class="panel-title">📡 Live Share</div>
-      <div id="mp-host-section">
-        <p style="color:#607d8b;font-size:0.82rem;margin-bottom:10px">Share your room code — others can watch live on their phone!</p>
-        <div id="mp-room-display" style="background:#061224;border:2px solid #00897b;border-radius:10px;padding:14px;text-align:center;margin-bottom:10px;display:none">
-          <div style="font-size:0.72rem;color:#607d8b;margin-bottom:4px">ROOM CODE</div>
-          <div id="mp-room-code" style="font-size:2.5rem;font-weight:900;color:#00e676;letter-spacing:6px"></div>
-          <div style="font-size:0.72rem;color:#607d8b;margin-top:4px">Share this with others to watch live</div>
-        </div>
-        <div id="mp-status" style="font-size:0.8rem;color:#607d8b;margin-bottom:8px"></div>
-        <button class="btn btn-sm" style="background:linear-gradient(135deg,#004d40,#00897b);color:#fff" id="mp-host-btn" onclick="startHosting()">🔴 Start Broadcasting</button>
-      </div>
     </div>
   </div><!-- end live-view -->
 </div>
@@ -498,6 +476,14 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
   <div class="modal" style="border-color:#1a3a6a">
     <h2 id="end-innings-title" style="color:var(--green2)">Over!</h2>
     <div class="modal-info" id="end-innings-msg"></div>
+    <div id="share-target-section" style="display:none;background:#0a1929;border:1px solid #6a1b9a;border-radius:10px;padding:14px;margin:12px 0;text-align:center">
+      <div style="font-size:0.72rem;color:#ce93d8;margin-bottom:6px;letter-spacing:1px">SEND THIS TO THE OTHER TEAM</div>
+      <div style="font-size:0.78rem;color:#607d8b;margin-bottom:8px">They can open the app on their phone and enter the target to track their chase</div>
+      <div id="share-target-display" style="font-size:2rem;font-weight:900;color:#e040fb;margin-bottom:6px"></div>
+      <div style="font-size:0.75rem;color:#607d8b;margin-bottom:8px">Target to chase</div>
+      <button class="btn btn-sm" style="background:linear-gradient(135deg,#4a148c,#9c27b0);color:#fff;width:100%" onclick="copyChaseLink()">📋 Copy Chase Link</button>
+      <div id="copy-confirm" style="font-size:0.75rem;color:#00e676;margin-top:6px;display:none">✓ Link copied!</div>
+    </div>
     <div id="end-innings-bowler-section">
       <label id="bowler-label">Select Bowler</label>
       <select id="inn2-bowler-select"></select>
@@ -593,9 +579,21 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
   </div>
 </div>
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <script>
 let state = {};
+
+// Auto-fill chase inputs from URL params (when team 2 opens the shared link)
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.get('chase') === '1') {
+    document.getElementById('chase-team').value = p.get('team') || '';
+    document.getElementById('chase-bowling-team').value = p.get('bowl') || '';
+    document.getElementById('chase-target').value = p.get('target') || '';
+    document.getElementById('chase-overs').value = p.get('overs') || '20';
+    document.getElementById('chase-players').value = p.get('players') || '11';
+    document.getElementById('chase-team').scrollIntoView({behavior:'smooth'});
+  }
+})();
 
 // ===== TOSS =====
 let tossState = {};
@@ -768,7 +766,7 @@ function addExtra(type, extraRuns) {
   const b = bs(); b.runs += runVal; b.curRuns += runVal;
   if (type==='wide') {
     // Wide: +1 run, NOT a legal ball — bowler bowls again
-    state.currentOverBalls.push({cls:'wide', label:'Wd'+(runVal>1?(runVal-1):'')});
+    state.currentOverBalls.push({cls:'wide', label:'Wd'+(runVal>1?(runVal-1):'')}); 
   } else if (type==='lb') {
     // Leg bye: legal ball, no runs to batter
     state.balls[ii()]++; b.balls++;
@@ -1059,6 +1057,10 @@ function showEndInnings() {
   document.getElementById('end-innings-title').textContent = '🏏 1st Innings Over';
   document.getElementById('end-innings-msg').textContent =
     state.team1+': '+runs+'/'+wkts+'\n'+state.team2+' need '+state.target+' runs to win';
+  // Show share target panel
+  document.getElementById('share-target-section').style.display = 'block';
+  document.getElementById('share-target-display').textContent = state.target;
+  document.getElementById('copy-confirm').style.display = 'none';
   const sel = document.getElementById('inn2-bowler-select');
   sel.innerHTML = '';
   state.players[1].forEach((p,i) => {
@@ -1068,6 +1070,21 @@ function showEndInnings() {
   document.getElementById('end-innings-btn').textContent = 'Start 2nd Innings ▶';
   document.getElementById('end-innings-btn').onclick = startSecondInnings;
   document.getElementById('end-innings-modal').classList.add('open');
+}
+
+function copyChaseLink() {
+  const url = window.location.href.split('?')[0] +
+    '?chase=1&team=' + encodeURIComponent(state.team2) +
+    '&bowl=' + encodeURIComponent(state.team1) +
+    '&target=' + state.target +
+    '&overs=' + state.maxOvers +
+    '&players=' + state.maxPlayers;
+  navigator.clipboard.writeText(url).then(() => {
+    document.getElementById('copy-confirm').style.display = 'block';
+    setTimeout(() => document.getElementById('copy-confirm').style.display = 'none', 2500);
+  }).catch(() => {
+    prompt('Copy this link and send to the other team:', url);
+  });
 }
 
 function startSecondInnings() {
@@ -1119,7 +1136,6 @@ function undoLast() {
 }
 
 function updateDisplay() {
-  broadcastState();
   const i=ii(), runs=state.runs[i], wkts=state.wickets[i], balls=state.balls[i];
   const tName = state.battingTeam===1 ? state.team1 : state.team2;
   document.getElementById('batting-team-name').textContent = tName.toUpperCase();
@@ -1342,8 +1358,6 @@ function buildBarChart() {
 
 function newMatch() {
   ['match-end-modal','end-innings-modal','noball-modal','wide-modal','rename-modal','wicket-modal','lb-modal'].forEach(id=>document.getElementById(id).classList.remove('open'));
-  if (peer) { peer.destroy(); peer = null; connections = []; isHost = false; }
-  if (viewerPeer) { viewerPeer.destroy(); viewerPeer = null; }
   document.querySelector('.scoring-panel').style.display = 'block';
   document.getElementById('scorecard-screen').style.display='none';
   document.getElementById('score-screen').style.display='none';
@@ -1354,108 +1368,6 @@ function newMatch() {
   document.getElementById('target-bar').style.display='none';
 }
 
-// ===== MULTIPLAYER =====
-let peer = null, connections = [], isHost = false, viewerPeer = null;
-
-function toggleMultiplayer() {
-  const panel = document.getElementById('mp-panel');
-  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-}
-
-function startHosting() {
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
-  document.getElementById('mp-host-btn').disabled = true;
-  document.getElementById('mp-status').textContent = 'Setting up...';
-  peer = new Peer('cricket-' + code);
-  peer.on('open', () => {
-    isHost = true;
-    document.getElementById('mp-room-code').textContent = code;
-    document.getElementById('mp-room-display').style.display = 'block';
-    document.getElementById('mp-status').textContent = '🟢 Broadcasting live — share the code!';
-    document.getElementById('mp-host-btn').textContent = '✅ Broadcasting';
-  });
-  peer.on('connection', conn => {
-    connections.push(conn);
-    conn.on('open', () => {
-      document.getElementById('mp-status').textContent = '🟢 ' + connections.length + ' viewer(s) connected';
-      conn.send({ type: 'state', state: getShareableState() });
-    });
-    conn.on('close', () => {
-      connections = connections.filter(c => c !== conn);
-      document.getElementById('mp-status').textContent = '🟢 ' + connections.length + ' viewer(s) connected';
-    });
-  });
-  peer.on('error', e => {
-    document.getElementById('mp-status').textContent = '❌ Error: ' + e.type;
-    document.getElementById('mp-host-btn').disabled = false;
-  });
-}
-
-function broadcastState() {
-  if (!isHost || !connections.length) return;
-  const payload = { type: 'state', state: getShareableState() };
-  connections.forEach(c => { try { c.send(payload); } catch(e){} });
-}
-
-function getShareableState() {
-  return {
-    team1: state.team1, team2: state.team2,
-    maxOvers: state.maxOvers, maxPlayers: state.maxPlayers, innings: state.innings,
-    battingTeam: state.battingTeam, bowlingTeam: state.bowlingTeam,
-    runs: state.runs, wickets: state.wickets, balls: state.balls, extras: state.extras,
-    striker: state.striker, nonStriker: state.nonStriker,
-    players: state.players, bowlerStats: state.bowlerStats,
-    currentBowlerName: state.currentBowlerName,
-    currentOverBalls: state.currentOverBalls,
-    overSummary: state.overSummary, target: state.target,
-    matchEnded: state.matchEnded,
-  };
-}
-
-function joinAsViewer() {
-  const code = document.getElementById('join-code').value.trim();
-  if (code.length < 4) { alert('Enter the 4-digit room code!'); return; }
-  document.getElementById('setup-screen').style.display = 'none';
-  // Show viewer screen
-  document.getElementById('score-screen').style.display = 'block';
-  document.getElementById('live-view').style.display = 'block';
-  document.getElementById('inn1-view').style.display = 'none';
-  // Hide scoring buttons for viewer
-  document.querySelector('.scoring-panel').style.display = 'none';
-  document.querySelector('.rw-section') && (document.querySelector('.rw-section').style.display = 'none');
-  document.getElementById('mp-panel').style.display = 'none';
-  // Show connecting message
-  document.getElementById('main-score').textContent = '...';
-  document.getElementById('batting-team-name').textContent = 'Connecting...';
-
-  viewerPeer = new Peer();
-  viewerPeer.on('open', () => {
-    const conn = viewerPeer.connect('cricket-' + code);
-    conn.on('open', () => {
-      document.getElementById('batting-team-name').textContent = 'Connected! Waiting...';
-    });
-    conn.on('data', data => {
-      if (data.type === 'state') {
-        Object.assign(state, data.state);
-        if (state.innings === 2) {
-          document.getElementById('inn-tab-1').classList.remove('active');
-          document.getElementById('inn-tab-2').classList.add('active');
-          document.getElementById('target-bar').style.display = 'flex';
-        }
-        updateDisplay();
-      }
-    });
-    conn.on('close', () => {
-      document.getElementById('batting-team-name').textContent = '⚠ Disconnected';
-    });
-  });
-  viewerPeer.on('error', () => {
-    alert('Could not connect. Check the room code and try again.');
-    document.getElementById('setup-screen').style.display = 'block';
-    document.getElementById('score-screen').style.display = 'none';
-    document.querySelector('.scoring-panel').style.display = 'block';
-  });
-}
 </script>
 </body>
 </html>
