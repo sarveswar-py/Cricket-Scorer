@@ -582,16 +582,17 @@ input:focus, select:focus { outline: none; border-color: var(--green); box-shado
 <script>
 let state = {};
 
-// Auto-fill chase inputs from URL params (when team 2 opens the shared link)
+// Auto-start chase from URL params (when team 2 opens the shared link)
 (function() {
   const p = new URLSearchParams(window.location.search);
-  if (p.get('chase') === '1') {
+  if (p.get('chase') === '1' && p.get('target')) {
     document.getElementById('chase-team').value = p.get('team') || '';
     document.getElementById('chase-bowling-team').value = p.get('bowl') || '';
     document.getElementById('chase-target').value = p.get('target') || '';
     document.getElementById('chase-overs').value = p.get('overs') || '20';
     document.getElementById('chase-players').value = p.get('players') || '11';
-    document.getElementById('chase-team').scrollIntoView({behavior:'smooth'});
+    // Auto-launch directly into scoring
+    setTimeout(startChase, 100);
   }
 })();
 
